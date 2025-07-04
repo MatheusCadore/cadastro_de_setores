@@ -10,44 +10,62 @@ import java.awt.event.ActionEvent;
 import java.sql.SQLException;
 import java.util.List;
 
-public class PainelSetor extends JPanel {
-    private JTextArea lista;
-    private JTextField idDeletar;
+class PainelSetor extends JPanel {
+    private JTable tabela;
+    private DefaultListModel<Setor> modeloTabela;
+    private JTextField nome, local, desc;
+    private int setorSelecionadoId = -1;
 
     public PainelSetor(Usuario usuario) {
         setLayout(new BorderLayout());
 
-        JPanel form = new JPanel(new GridLayout(6, 2));
-        JTextField nome = new JTextField();
-        JTextField local = new JTextField();
-        JTextField desc = new JTextField();
-        JButton btnSalvar = new JButton("Salvar Setor");
-        idDeletar = new JTextField();
-        JButton btnDeletar = new JButton("Deletar por ID");
+        // Tabela de setores
+        String[] colunas = {"ID", "Nome", "Localização", "Descrição"};
+        String[][] dados = {};
+        tabela = new JTable(new javax.swing.table.DefaultTableModel(dados, colunas));
+        JScrollPane scrollPane = new JScrollPane(tabela);
+        add(scrollPane, BorderLayout.CENTER);
 
-        form.add(new JLabel("Nome:")); form.add(nome);
-        form.add(new JLabel("Localização:")); form.add(local);
-        form.add(new JLabel("Descrição:")); form.add(desc);
+        tabela.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = tabela.getSelectedRow();
+            if (selectedRow >= 0) {
+                setorSelecionadoId = Integer.parseInt(tabela.getValueAt(selectedRow, 0).toString());
+                nome.setText(tabela.getValueAt(selectedRow, 1).toString());
+                local.setText(tabela.getValueAt(selectedRow, 2).toString());
+                desc.setText(tabela.getValueAt(selectedRow, 3).toString());
+            }
+        });
 
-        form.add(btnSalvar); form.add(new JLabel());
-        form.add(new JLabel("ID para deletar:")); form.add(idDeletar);
-        form.add(btnDeletar); form.add(new JLabel());
+        // Formulário e botões
+        JPanel formulario = new JPanel(new GridLayout(4, 2));
+        nome = new JTextField();
+        local = new JTextField();
+        desc = new JTextField();
 
+        formulario.add(new JLabel("Nome:")); formulario.add(nome);
+        formulario.add(new JLabel("Localização:")); formulario.add(local);
+        formulario.add(new JLabel("Descrição:")); formulario.add(desc);
 
-        add(form, BorderLayout.NORTH);
+        add(formulario, BorderLayout.NORTH);
 
+        JPanel botoes = new JPanel();
+        JButton btnSalvar = new JButton("Salvar");
+        JButton btnEditar = new JButton("Editar");
+        JButton btnDeletar = new JButton("Deletar");
 
-        lista = new JTextArea();
-        lista.setEditable(false);
-        add(new JScrollPane(lista), BorderLayout.CENTER);
+        botoes.add(btnSalvar);
+        botoes.add(btnEditar);
+        botoes.add(btnDeletar);
+
+        add(botoes, BorderLayout.SOUTH);
 
         btnSalvar.addActionListener((ActionEvent e) -> {
 
             String nomeTexto = nome.getText().trim();
-            String locTexto = local.getText().trim();
+            String localTexto = local.getText().trim();
             String descTexto = desc.getText().trim();
 
-            if (nomeTexto.isEmpty() || locTexto.isEmpty() || descTexto.isEmpty()) {
+            if (nomeTexto.isEmpty() || localTexto.isEmpty() || descTexto.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Todos os campos devem ser preenchidos!", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -55,52 +73,63 @@ public class PainelSetor extends JPanel {
             try {
                 Setor setor = new Setor(0, nome.getText(), local.getText(), desc.getText(), usuario.getId());
                 new SetorDAO().salvar(setor);
-                nome.setText("");
-                local.setText("");
-                desc.setText("");
-                atualizarListaSetores();
+                limparCampos();
+                atualizarTabelaSetores();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        btnEditar.addActionListener((ActionEvent e) -> {
+            try {
+                if (setorSelecionadoId != -1) {
+                    Setor setor = new Setor(setorSelecionadoId, nome.getText(), local.getText(), desc.getText(), usuario.getId());
+                    new SetorDAO().atualizar(setor);
+                    limparCampos();
+                    atualizarTabelaSetores();
+                }
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         });
 
         btnDeletar.addActionListener((ActionEvent e) -> {
-
-            String idTexto = idDeletar.getText().trim();
-
-            if (idTexto.isEmpty()){
-                JOptionPane.showMessageDialog(this,"Id do setor deve ser preenchido!","erro",JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
             try {
-                int id = Integer.parseInt(idDeletar.getText());
-                new SetorDAO().deletar(id);
-                idDeletar.setText("");
-                atualizarListaSetores();
-            } catch (Exception ex) {
+                if (setorSelecionadoId != -1) {
+                    new SetorDAO().deletar(setorSelecionadoId);
+                    limparCampos();
+                    atualizarTabelaSetores();
+                }
+            } catch (SQLException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this,ex.getMessage(),"erro",JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        atualizarListaSetores();
+        atualizarTabelaSetores();
     }
 
-    private void atualizarListaSetores() {
+    private void atualizarTabelaSetores() {
         try {
             List<Setor> setores = new SetorDAO().buscarTodos();
-            StringBuilder sb = new StringBuilder();
-            for (Setor s : setores) {
-                sb.append("ID: ").append(s.getId())
-                        .append(" | Nome: ").append(s.getNome())
-                        .append(" | Local: ").append(s.getLocalizacao())
-                        .append(" | Descricao: ").append(s.getDescricao())
-                        .append("\n");
+            String[][] dados = new String[setores.size()][4];
+            for (int i = 0; i < setores.size(); i++) {
+                Setor s = setores.get(i);
+                dados[i][0] = String.valueOf(s.getId());
+                dados[i][1] = s.getNome();
+                dados[i][2] = s.getLocalizacao();
+                dados[i][3] = s.getDescricao();
             }
-            lista.setText(sb.toString());
+            String[] colunas = {"ID", "Nome", "Localização", "Descrição"};
+            tabela.setModel(new javax.swing.table.DefaultTableModel(dados, colunas));
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void limparCampos() {
+        nome.setText("");
+        local.setText("");
+        desc.setText("");
+        setorSelecionadoId = -1;
     }
 }

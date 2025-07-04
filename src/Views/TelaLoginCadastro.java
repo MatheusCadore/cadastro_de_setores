@@ -20,33 +20,51 @@ public class TelaLoginCadastro extends JFrame {
         setLocationRelativeTo(null);
 
         tabs.add("Login", criarPainelLogin());
-        tabs.add("Cadastro", criarPainelCadastro());
+        tabs.add("Cadastro", criarPainelCadastro(tabs));
 
         add(tabs);
         setVisible(true);
     }
 
     private JPanel criarPainelLogin() {
-        JPanel panel = new JPanel(new GridLayout(4, 1));
-        JTextField email = new JTextField();
-        JPasswordField senha = new JPasswordField();
-        JButton btnLogin = new JButton("Entrar");
+        JPanel painelPrincipal = new JPanel();
+        painelPrincipal.setLayout(new BorderLayout());
+        painelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        panel.add(new JLabel("Email:"));
-        panel.add(email);
-        panel.add(new JLabel("Senha:"));
-        panel.add(senha);
-        panel.add(btnLogin);
+        // Campos com GridLayout
+        JPanel campos = new JPanel(new GridLayout(2, 2, 10, 10));
+        JLabel lblEmail = new JLabel("Email:");
+        JTextField campoEmail = new JTextField();
+        JLabel lblSenha = new JLabel("Senha:");
+        JPasswordField campoSenha = new JPasswordField();
+        campos.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+
+        campos.add(lblEmail);
+        campos.add(campoEmail);
+        campos.add(lblSenha);
+        campos.add(campoSenha);
+
+
+        JPanel botoes = new JPanel();
+        botoes.setLayout(new BoxLayout(botoes, BoxLayout.Y_AXIS));
+        JButton btnLogin = new JButton("Entrar");
+        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
+        botoes.add(Box.createVerticalStrut(20));
+        botoes.add(btnLogin);
+
+        painelPrincipal.add(campos, BorderLayout.CENTER);
+        painelPrincipal.add(botoes, BorderLayout.SOUTH);
+
 
         btnLogin.addActionListener((ActionEvent e) -> {
             try {
                 UsuarioDAO dao = new UsuarioDAO();
-
-                Usuario u = dao.buscarPorEmail(email.getText());
-                if (u != null && u.getSenha().equals(new String(senha.getPassword()))) {
+                Usuario u = dao.buscarPorEmail(campoEmail.getText());
+                if (u != null && u.getSenha().equals(new String(campoSenha.getPassword()))) {
                     JOptionPane.showMessageDialog(this, "Bem-vindo, " + u.getNome() + "!");
                     dispose();
-                    new TelaPrincipal(u); // passa o usuário logado
+                    new TelaPrincipal(u);
                 } else {
                     JOptionPane.showMessageDialog(this, "Email ou senha inválidos.");
                 }
@@ -56,29 +74,47 @@ public class TelaLoginCadastro extends JFrame {
             }
         });
 
-        return panel;
+        return painelPrincipal;
     }
 
-    private JPanel criarPainelCadastro() {
-        JPanel panel = new JPanel(new GridLayout(6, 1));
-        JTextField nome = new JTextField();
-        JTextField email = new JTextField();
-        JPasswordField senha = new JPasswordField();
-        JButton btnCadastrar = new JButton("Cadastrar");
 
-        panel.add(new JLabel("Nome:"));
-        panel.add(nome);
-        panel.add(new JLabel("Email:"));
-        panel.add(email);
-        panel.add(new JLabel("Senha:"));
-        panel.add(senha);
-        panel.add(btnCadastrar);
+    private JPanel criarPainelCadastro(JTabbedPane abas) {
+        JPanel painelPrincipal = new JPanel();
+        painelPrincipal.setLayout(new BorderLayout());
+        painelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+
+        // Campos com GridLayout
+        JPanel campos = new JPanel(new GridLayout(3, 2, 10, 10));
+        JLabel lblNome = new JLabel("Nome:");
+        JTextField campoNome = new JTextField();
+        JLabel lblEmail = new JLabel("Email:");
+        JTextField campoEmail = new JTextField();
+        JLabel lblSenha = new JLabel("Senha:");
+        JPasswordField campoSenha = new JPasswordField();
+
+        campos.add(lblNome);
+        campos.add(campoNome);
+        campos.add(lblEmail);
+        campos.add(campoEmail);
+        campos.add(lblSenha);
+        campos.add(campoSenha);
+
+
+        JPanel botoes = new JPanel();
+        botoes.setLayout(new BoxLayout(botoes, BoxLayout.Y_AXIS));
+        JButton btnCadastrar = new JButton("Cadastrar");
+        btnCadastrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        botoes.add(Box.createVerticalStrut(20));
+        botoes.add(btnCadastrar);
+
+        painelPrincipal.add(campos, BorderLayout.CENTER);
+        painelPrincipal.add(botoes, BorderLayout.SOUTH);
+
 
         btnCadastrar.addActionListener((ActionEvent e) -> {
-
-            String nomeTexto = nome.getText().trim();
-            String emailTexto = email.getText().trim();
-            String senhaTexto = new String(senha.getPassword()).trim();
+            String nomeTexto = campoNome.getText().trim();
+            String emailTexto = campoEmail.getText().trim();
+            String senhaTexto = new String(campoSenha.getPassword()).trim();
 
             if (nomeTexto.isEmpty() || emailTexto.isEmpty() || senhaTexto.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Todos os campos devem ser preenchidos!", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -96,16 +132,17 @@ public class TelaLoginCadastro extends JFrame {
                 dao.salvar(novo);
 
                 JOptionPane.showMessageDialog(this, "Cadastro realizado com sucesso!");
-                nome.setText("");
-                email.setText("");
-                senha.setText("");
+                campoNome.setText("");
+                campoEmail.setText("");
+                campoSenha.setText("");
+                abas.setSelectedIndex(0);
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Erro ao cadastrar.");
             }
         });
 
-        return panel;
-
+        return painelPrincipal;
     }
+
 }

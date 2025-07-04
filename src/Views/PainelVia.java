@@ -11,97 +11,163 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
-public class PainelVia extends JPanel {
-    private JTextArea lista;
+class PainelVia extends JPanel {
+    private JTable tabela;
+    private JTextField nome;
+    private JComboBox<String> tipoCombo, grauCombo;
+    private JComboBox<Setor> setorCombo;
+    private int viaSelecionadaId = -1;
+
+    private static final String[] TIPOS = {"Boulder", "Esportiva", "Trad", "Mista"};
+    private static final String[] GRAUS = {
+            "4", "5", "5sup", "6a", "6b", "6c", "7a", "7b", "7c",
+            "8a", "8b", "8c", "9a", "9b", "9c",
+            "10a", "10b", "10c", "11a", "11b", "11c",
+            "12a", "12b", "12c"
+    };
 
     public PainelVia(Usuario usuario) {
         setLayout(new BorderLayout());
 
-        JPanel form = new JPanel(new GridLayout(7, 2));
-        JTextField nome = new JTextField();
-        JTextField tipo = new JTextField();
-        JTextField grau = new JTextField();
-        JTextField setorId = new JTextField();
-        JButton btnSalvar = new JButton("Salvar Via");
-        JTextField idDeletar = new JTextField();
-        JButton btnDeletar = new JButton("Deletar por ID");
+        String[] colunas = {"ID", "Nome", "Tipo", "Grau", "Setor ID"};
+        tabela = new JTable(new javax.swing.table.DefaultTableModel(new String[0][0], colunas));
+        JScrollPane scrollPane = new JScrollPane(tabela);
+        add(scrollPane, BorderLayout.CENTER);
+
+        tabela.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = tabela.getSelectedRow();
+            if (selectedRow >= 0) {
+                viaSelecionadaId = Integer.parseInt(tabela.getValueAt(selectedRow, 0).toString());
+                nome.setText(tabela.getValueAt(selectedRow, 1).toString());
+                tipoCombo.setSelectedItem(tabela.getValueAt(selectedRow, 2).toString());
+                grauCombo.setSelectedItem(tabela.getValueAt(selectedRow, 3).toString());
+
+                int setorIdSelecionado = Integer.parseInt(tabela.getValueAt(selectedRow, 4).toString());
+                for (int i = 0; i < setorCombo.getItemCount(); i++) {
+                    if (setorCombo.getItemAt(i).getId() == setorIdSelecionado) {
+                        setorCombo.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+        });
+
+        JPanel form = new JPanel(new GridLayout(4, 2));
+        nome = new JTextField();
+        tipoCombo = new JComboBox<>(TIPOS);
+        grauCombo = new JComboBox<>(GRAUS);
+        setorCombo = new JComboBox<>();
+        carregarSetores();
 
         form.add(new JLabel("Nome:")); form.add(nome);
-        form.add(new JLabel("Tipo:")); form.add(tipo);
-        form.add(new JLabel("Grau:")); form.add(grau);
-        form.add(new JLabel("Setor ID:")); form.add(setorId);
-        form.add(btnSalvar); form.add(new JLabel());
-        form.add(new JLabel("ID para deletar:")); form.add(idDeletar);
-        form.add(btnDeletar); form.add(new JLabel());
-
-
+        form.add(new JLabel("Tipo:")); form.add(tipoCombo);
+        form.add(new JLabel("Grau:")); form.add(grauCombo);
+        form.add(new JLabel("Setor:")); form.add(setorCombo);
         add(form, BorderLayout.NORTH);
 
-        lista = new JTextArea();
-        lista.setEditable(false);
-        add(new JScrollPane(lista), BorderLayout.CENTER);
+        JPanel botoes = new JPanel();
+        JButton btnSalvar = new JButton("Salvar");
+        JButton btnEditar = new JButton("Editar");
+        JButton btnDeletar = new JButton("Deletar");
+        botoes.add(btnSalvar);
+        botoes.add(btnEditar);
+        botoes.add(btnDeletar);
+        add(botoes, BorderLayout.SOUTH);
 
         btnSalvar.addActionListener((ActionEvent e) -> {
-
-            String nomeTexto = nome.getText().trim();
-            String tipoTexto = nome.getText().trim();
-            String grauTexto = nome.getText().trim();
-            String setorIdTexto = nome.getText().trim();
-
-            if (nomeTexto.isEmpty() || tipoTexto.isEmpty() || grauTexto.isEmpty() || setorIdTexto.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Todos os campos devem ser preenchidos!", "Erro", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
             try {
-                Via via = new Via(0, usuario.getId(), nome.getText(), tipo.getText(), Integer.parseInt(setorId.getText()), grau.getText());
+                Setor setorSelecionado = (Setor) setorCombo.getSelectedItem();
+                if (setorSelecionado == null) return;
+
+                Via via = new Via(
+                        0, usuario.getId(),
+                        nome.getText(),
+                        tipoCombo.getSelectedItem().toString(),
+                        setorSelecionado.getId(),
+                        grauCombo.getSelectedItem().toString()
+                );
                 new ViaDAO().salvar(via);
-                lista.append("Via cadastrada: " + via.getNome() + "\n");
-                nome.setText(""); tipo.setText(""); grau.setText(""); setorId.setText("");
+                limpar();
+                atualizarTabela();
             } catch (SQLException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnEditar.addActionListener((ActionEvent e) -> {
+            try {
+                if (viaSelecionadaId != -1) {
+                    Setor setorSelecionado = (Setor) setorCombo.getSelectedItem();
+                    if (setorSelecionado == null) return;
+
+                    Via via = new Via(
+                            viaSelecionadaId, usuario.getId(),
+                            nome.getText(),
+                            tipoCombo.getSelectedItem().toString(),
+                            setorSelecionado.getId(),
+                            grauCombo.getSelectedItem().toString()
+                    );
+                    new ViaDAO().atualizar(via);
+                    limpar();
+                    atualizarTabela();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
         });
 
         btnDeletar.addActionListener((ActionEvent e) -> {
-            String idTexto = idDeletar.getText().trim();
-
-            if (idTexto.isEmpty()){
-                JOptionPane.showMessageDialog(this,"Id do setor deve ser preenchido!","erro",JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
             try {
-                int id = Integer.parseInt(idDeletar.getText());
-                new ViaDAO().deletar(id);
-                idDeletar.setText("");
-                atualizarListaVias();
-            } catch (Exception ex) {
+                if (viaSelecionadaId != -1) {
+                    new ViaDAO().deletar(viaSelecionadaId);
+                    limpar();
+                    atualizarTabela();
+                }
+            } catch (SQLException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this,ex.getMessage(),"erro",JOptionPane.ERROR_MESSAGE);
             }
         });
-        atualizarListaVias();
+
+        atualizarTabela();
     }
 
-    private void atualizarListaVias() {
+    public void atualizarTabela() {
         try {
-            SetorDAO dao = new SetorDAO();
             List<Via> vias = new ViaDAO().buscarTodos();
-            StringBuilder sb = new StringBuilder();
-            for (Via v : vias) {
-                sb.append("ID: ").append(v.getId())
-                        .append(" | Nome: ").append(v.getNome())
-                        .append(" | Tipo: ").append(v.getTipo())
-                        .append(" | Grua: ").append(v.getGrau())
-                        .append(" | Setor: ").append(dao.buscarPorId(v.getSetor_id()).getNome())
-                        .append("\n");
+            String[][] dados = new String[vias.size()][5];
+            for (int i = 0; i < vias.size(); i++) {
+                Via v = vias.get(i);
+                dados[i][0] = String.valueOf(v.getId());
+                dados[i][1] = v.getNome();
+                dados[i][2] = v.getTipo();
+                dados[i][3] = v.getGrau();
+                dados[i][4] = String.valueOf(v.getSetor_id());
             }
-            lista.setText(sb.toString());
+            tabela.setModel(new javax.swing.table.DefaultTableModel(dados, new String[]{"ID", "Nome", "Tipo", "Grau", "Setor ID"}));
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public void carregarSetores() {
+        try {
+            List<Setor> setores = new SetorDAO().buscarTodos();
+            setorCombo.removeAllItems();
+            for (Setor s : setores) {
+                setorCombo.addItem(s);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void limpar() {
+        nome.setText("");
+        tipoCombo.setSelectedIndex(0);
+        grauCombo.setSelectedIndex(0);
+        setorCombo.setSelectedIndex(0);
+        viaSelecionadaId = -1;
     }
 }

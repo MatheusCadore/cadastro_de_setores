@@ -18,6 +18,11 @@ public class Setor {
         this.id = id;
     }
 
+    @Override
+    public String toString() {
+        return nome; // Exibe o nome no combo
+    }
+
     public int getCriado_por() {
         return criado_por;
     }

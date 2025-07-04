@@ -19,6 +19,11 @@ public class Via {
         this.grau = grau;
     }
 
+    @Override
+    public String toString() {
+        return nome;
+    }
+
     public int getId() {
         return id;
     }

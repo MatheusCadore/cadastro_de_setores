@@ -13,7 +13,7 @@ public class ViaDAO {
         conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/seg_pronta", "root", "Mgk62701");
     }
 
-    // 1. SALVAR
+    // SALVAR
     public void salvar(Via via) throws SQLException {
         String sql = "INSERT INTO vias (criado_por, nome, tipo, setor_id, grau) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -25,7 +25,7 @@ public class ViaDAO {
         stmt.executeUpdate();
     }
 
-    // 2. BUSCAR POR ID
+    // BUSCAR POR ID
     public Via buscarPorId(int id) throws SQLException {
         String sql = "SELECT * FROM vias WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -46,7 +46,7 @@ public class ViaDAO {
         return null;
     }
 
-    // 3. BUSCAR TODOS
+    // BUSCAR TODOS
     public List<Via> buscarTodos() throws SQLException {
         List<Via> vias = new ArrayList<>();
         String sql = "SELECT * FROM vias";
@@ -68,7 +68,7 @@ public class ViaDAO {
         return vias;
     }
 
-    // 4. ATUALIZAR
+    // ATUALIZAR
     public void atualizar(Via via) throws SQLException {
         String sql = "UPDATE vias SET criado_por = ?, nome = ?, tipo = ?, setor_id = ?, grau = ? WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -81,7 +81,7 @@ public class ViaDAO {
         stmt.executeUpdate();
     }
 
-    // 5. DELETAR
+    // DELETAR
     public void deletar(int id) throws SQLException {
         String sql = "DELETE FROM vias WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);

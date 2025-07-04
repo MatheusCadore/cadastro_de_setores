@@ -14,7 +14,9 @@ public class FavoritoDAO {
         conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/seg_pronta", "root", "Mgk62701");
     }
 
-    // 1. SALVAR
+
+
+    // SALVAR
     public void salvar(Favorito favorito) throws SQLException {
         String sql = "INSERT INTO favoritos (usuario_id, via_id, data_favorito) VALUES (?, ?, ?)";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -24,7 +26,7 @@ public class FavoritoDAO {
         stmt.executeUpdate();
     }
 
-    // 2. BUSCAR POR ID
+    // BUSCAR POR ID
     public Favorito buscarPorId(int id) throws SQLException {
         String sql = "SELECT * FROM favoritos WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -42,7 +44,7 @@ public class FavoritoDAO {
         return null;
     }
 
-    // 3. BUSCAR TODOS
+    // BUSCAR TODOS
     public List<Favorito> buscarTodos() throws SQLException {
         List<Favorito> favoritos = new ArrayList<>();
         String sql = "SELECT * FROM favoritos";
@@ -62,7 +64,7 @@ public class FavoritoDAO {
         return favoritos;
     }
 
-    // 4. ATUALIZAR
+    // ATUALIZAR
     public void atualizar(Favorito favorito) throws SQLException {
         String sql = "UPDATE favoritos SET usuario_id = ?, via_id = ?, data_favorito = ? WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -73,7 +75,7 @@ public class FavoritoDAO {
         stmt.executeUpdate();
     }
 
-    // 5. DELETAR
+    // DELETAR
     public void deletar(int id) throws SQLException {
         String sql = "DELETE FROM favoritos WHERE id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -82,6 +84,30 @@ public class FavoritoDAO {
     }
 
 
-    public void deletarPorUsuarioEVia(int id, int id1) {
+    public void deletarPorUsuarioEVia(int usario_id, int via_id) throws SQLException {
+        String sql = "DELETE FROM favoritos WHERE usuario_id = ? AND via_id = ?";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, usario_id);
+        stmt.setInt(2, via_id);
+        stmt.executeUpdate();
+    }
+
+    // BUSCA PELO ID DO USUARIO LOGADO
+    public List<Favorito> buscarPorUsuario(int usuarioId) throws SQLException {
+        List<Favorito> favoritos = new ArrayList<>();
+        String sql = "SELECT * FROM favoritos WHERE usuario_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, usuarioId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                favoritos.add(new Favorito(
+                        rs.getInt("id"),
+                        rs.getInt("usuario_id"),
+                        rs.getInt("via_id"),
+                        rs.getDate("data_favorito")
+                ));
+            }
+        }
+        return favoritos;
     }
 }
